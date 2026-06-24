@@ -5,7 +5,9 @@ from datetime import datetime, timezone, timedelta
 
 NAMES_ZH = {
     "Aoarashi": "青嵐", "Isuzu": "五十鈴", "Chigi no Shiro": "千木の白",
-    "Yugen": "又玄", "Wako": "和光", "Kinrin": "金輪", "Kiwami Choan": "極長安",
+    "Yugen": "又玄", "Wako": "和光", "Kinrin": "金輪",
+    "Kiwami Choan": "極長安", "Choan": "長安",
+    "Unkaku": "雲鶴", "Tenju": "天授", "Eiju": "栄寿",
 }
 URL = "https://www.marukyu-koyamaen.co.jp/english/shop/products/catalog/matcha/principal"
 STATE_FILE = "matcha_state.json"
@@ -13,11 +15,10 @@ TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 def send_telegram(msg):
-    r = requests.post(
+    requests.post(
         f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
         json={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "HTML"}
     )
-    print("Telegram 回應：", r.status_code, r.text[:200])
 
 def fetch_and_parse():
     from playwright.sync_api import sync_playwright
@@ -38,7 +39,6 @@ def fetch_and_parse():
                 if (name) {
                     results.push({
                         name: name,
-                        classes: el.className,
                         outofstock: el.classList.contains('outofstock')
                     });
                 }
@@ -48,13 +48,9 @@ def fetch_and_parse():
 
         browser.close()
 
-        print("偵測結果：")
         result = {}
         for p in products:
-            print(" ", p)
-            status = "sold_out" if p["outofstock"] else "in_stock"
-            result[p["name"]] = status
-
+            result[p["name"]] = "sold_out" if p["outofstock"] else "in_stock"
         return result
 
 def load_state():
@@ -83,7 +79,6 @@ def main():
 
     any_in_stock = any(s == "in_stock" for s in current.values())
     was_any_in_stock = any(s == "in_stock" for s in old.values())
-
     now = datetime.now(timezone(timedelta(hours=8))).strftime("%m/%d %H:%M")
 
     if any_in_stock:
