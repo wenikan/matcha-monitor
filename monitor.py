@@ -30,8 +30,24 @@ def fetch_page():
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
             "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         ))
-        page.goto(URL, wait_until="domcontentloaded", timeout=30000)
-        page.wait_for_timeout(2000)
+        page.goto(URL, wait_until="networkidle", timeout=30000)
+        page.wait_for_timeout(3000)
+
+        sold_out_elements = page.evaluate("""() => {
+            const elements = [];
+            document.querySelectorAll('*').forEach(el => {
+                if (el.textContent.trim() === 'SOLD OUT' || el.textContent.trim() === 'Sold Out') {
+                    elements.push({
+                        tag: el.tagName,
+                        class: el.className,
+                        parent: el.parentElement ? el.parentElement.outerHTML.substring(0, 500) : ''
+                    });
+                }
+            });
+            return elements;
+        }""")
+        print("SOLD OUT 元素：", sold_out_elements)
+
         html = page.content()
         browser.close()
         return html
@@ -71,8 +87,6 @@ def format_status(current):
     return "\n".join(lines)
 
 def main():
-    send_telegram("測試訊息，Telegram 有收到嗎？")  # 測試用
-
     html = fetch_page()
     current = parse(html)
     old = load_state()
