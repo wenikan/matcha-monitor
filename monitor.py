@@ -79,7 +79,8 @@ def main():
 
     now = datetime.now(timezone(timedelta(hours=8))).strftime("%m/%d %H:%M")
 
-    if any_in_stock:
+   
+    if True:  # 測試用
         # 有貨就每 15 分鐘傳一次
         restocked = [n for n in current if old.get(n) == "sold_out" and current[n] == "in_stock"]
         if restocked:
