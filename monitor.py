@@ -35,17 +35,20 @@ def fetch_page():
 
         items = page.evaluate("""() => {
             const results = [];
-            document.querySelectorAll('li, .item, .product, article').forEach(el => {
-                const text = el.innerText.trim().substring(0, 200);
-                if (text.length > 10) {
-                    results.push({
-                        tag: el.tagName,
-                        class: el.className,
-                        text: text
-                    });
-                }
+            const keywords = ['Yugen', 'Wako', 'Kinrin', 'Aoarashi'];
+            keywords.forEach(keyword => {
+                document.querySelectorAll('a, div, article').forEach(el => {
+                    if (el.innerText && el.innerText.includes(keyword) && el.innerText.length < 300) {
+                        results.push({
+                            keyword: keyword,
+                            tag: el.tagName,
+                            class: el.className,
+                            html: el.outerHTML.substring(0, 600)
+                        });
+                    }
+                });
             });
-            return results.slice(0, 20);
+            return results.slice(0, 10);
         }""")
         for item in items:
             print("元素：", item)
