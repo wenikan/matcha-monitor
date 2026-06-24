@@ -1,0 +1,39 @@
+name: 抹茶庫存監控
+
+on:
+  schedule:
+       - cron: '*/15 * * * *'  # 每15分鐘跑一次
+  workflow_dispatch:       # 允許手動觸發測試
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 安裝套件
+        run: pip install -r requirements.txt
+
+      - name: 安裝 Playwright 瀏覽器
+        run: playwright install chromium --with-deps
+
+      - name: 執行監控
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python monitor.py
+
+      - name: 儲存狀態
+        run: |
+          git config user.name "matcha-bot"
+          git config user.email "bot@github.com"
+          git add matcha_state.json
+          git diff --staged --quiet || git commit -m "update state"
+          git push
