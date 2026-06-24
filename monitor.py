@@ -20,7 +20,7 @@ def send_telegram(msg):
         f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
         json={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "HTML"}
     )
-    print("Telegram 回應：", r.status_code, r.text)
+    print("Telegram 回應：", r.status_code, r.text[:200])
 
 def fetch_page():
     from playwright.sync_api import sync_playwright
@@ -33,20 +33,22 @@ def fetch_page():
         page.goto(URL, wait_until="networkidle", timeout=30000)
         page.wait_for_timeout(3000)
 
-        sold_out_elements = page.evaluate("""() => {
-            const elements = [];
-            document.querySelectorAll('*').forEach(el => {
-                if (el.textContent.trim() === 'SOLD OUT' || el.textContent.trim() === 'Sold Out') {
-                    elements.push({
+        items = page.evaluate("""() => {
+            const results = [];
+            document.querySelectorAll('li, .item, .product, article').forEach(el => {
+                const text = el.innerText.trim().substring(0, 200);
+                if (text.length > 10) {
+                    results.push({
                         tag: el.tagName,
                         class: el.className,
-                        parent: el.parentElement ? el.parentElement.outerHTML.substring(0, 500) : ''
+                        text: text
                     });
                 }
             });
-            return elements;
+            return results.slice(0, 20);
         }""")
-        print("SOLD OUT 元素：", sold_out_elements)
+        for item in items:
+            print("元素：", item)
 
         html = page.content()
         browser.close()
