@@ -3,11 +3,8 @@ import json
 import os
 from datetime import datetime, timezone, timedelta
 
-PRODUCTS = [
-    "Aoarashi", "Isuzu", "Chigi", "Yugen", "Wako", "Kinrin", "Kiwami Choan"
-]
 NAMES_ZH = {
-    "Aoarashi": "青嵐", "Isuzu": "五十鈴", "Chigi": "千木の白",
+    "Aoarashi": "青嵐", "Isuzu": "五十鈴", "Chigi no Shiro": "千木の白",
     "Yugen": "又玄", "Wako": "和光", "Kinrin": "金輪", "Kiwami Choan": "極長安",
 }
 URL = "https://www.marukyu-koyamaen.co.jp/english/shop/products/catalog/matcha/principal"
@@ -22,7 +19,7 @@ def send_telegram(msg):
     )
     print("Telegram 回應：", r.status_code, r.text[:200])
 
-def fetch_page():
+def fetch_and_parse():
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -33,43 +30,32 @@ def fetch_page():
         page.goto(URL, wait_until="networkidle", timeout=30000)
         page.wait_for_timeout(3000)
 
-        items = page.evaluate("""() => {
+        products = page.evaluate("""() => {
             const results = [];
-            const keywords = ['Yugen', 'Wako', 'Kinrin', 'Aoarashi'];
-            keywords.forEach(keyword => {
-                document.querySelectorAll('a, div, article').forEach(el => {
-                    if (el.innerText && el.innerText.includes(keyword) && el.innerText.length < 300) {
-                        results.push({
-                            keyword: keyword,
-                            tag: el.tagName,
-                            class: el.className,
-                            html: el.outerHTML.substring(0, 600)
-                        });
-                    }
-                });
+            document.querySelectorAll('li.product, article.product').forEach(el => {
+                const nameEl = el.querySelector('h2, h3, h4, .product-name');
+                const name = nameEl ? nameEl.innerText.trim() : '';
+                if (name) {
+                    results.push({
+                        name: name,
+                        classes: el.className,
+                        outofstock: el.classList.contains('outofstock')
+                    });
+                }
             });
-            return results.slice(0, 10);
+            return results;
         }""")
-        for item in items:
-            print("元素：", item)
 
-        html = page.content()
         browser.close()
-        return html
 
-def parse(html):
-    from bs4 import BeautifulSoup
-    soup = BeautifulSoup(html, "html.parser")
-    text = soup.get_text(" ", strip=True)
-    result = {}
-    for name in PRODUCTS:
-        idx = text.upper().find(name.upper())
-        if idx == -1:
-            result[name] = "unknown"
-            continue
-        window = text[max(0, idx-100):idx+300].upper()
-        result[name] = "sold_out" if "SOLD OUT" in window else "in_stock"
-    return result
+        print("偵測結果：")
+        result = {}
+        for p in products:
+            print(" ", p)
+            status = "sold_out" if p["outofstock"] else "in_stock"
+            result[p["name"]] = status
+
+        return result
 
 def load_state():
     if os.path.exists(STATE_FILE):
@@ -92,8 +78,7 @@ def format_status(current):
     return "\n".join(lines)
 
 def main():
-    html = fetch_page()
-    current = parse(html)
+    current = fetch_and_parse()
     old = load_state()
 
     any_in_stock = any(s == "in_stock" for s in current.values())
