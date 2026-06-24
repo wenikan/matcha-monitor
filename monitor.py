@@ -16,10 +16,11 @@ TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
 def send_telegram(msg):
-    requests.post(
+    r = requests.post(
         f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage",
         json={"chat_id": TELEGRAM_CHAT_ID, "text": msg, "parse_mode": "HTML"}
     )
+    print("Telegram 回應：", r.status_code, r.text)
 
 def fetch_page():
     from playwright.sync_api import sync_playwright
@@ -70,6 +71,8 @@ def format_status(current):
     return "\n".join(lines)
 
 def main():
+    send_telegram("測試訊息，Telegram 有收到嗎？")  # 測試用
+
     html = fetch_page()
     current = parse(html)
     old = load_state()
@@ -79,25 +82,12 @@ def main():
 
     now = datetime.now(timezone(timedelta(hours=8))).strftime("%m/%d %H:%M")
 
-   
-    if True:  # 測試用
-        # 有貨就每 15 分鐘傳一次
+    if any_in_stock:
         restocked = [n for n in current if old.get(n) == "sold_out" and current[n] == "in_stock"]
-        if restocked:
-            header = "🍵 <b>補貨了！快去買！</b>"
-        else:
-            header = "🛒 <b>還有貨，記得去買！</b>"
-
-        msg = (
-            f"{header}\n\n"
-            f"{format_status(current)}\n\n"
-            f"🔗 {URL}\n"
-            f"⏰ {now}"
-        )
+        header = "🍵 <b>補貨了！快去買！</b>" if restocked else "🛒 <b>還有貨，記得去買！</b>"
+        msg = f"{header}\n\n{format_status(current)}\n\n🔗 {URL}\n⏰ {now}"
         send_telegram(msg)
-
     elif was_any_in_stock and not any_in_stock:
-        # 剛剛全部賣完
         send_telegram(f"😢 <b>全部賣完了</b>，繼續幫你盯著...\n⏰ {now}")
 
     save_state(current)
