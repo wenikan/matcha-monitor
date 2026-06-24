@@ -1,11 +1,15 @@
 import requests
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 PRODUCTS = [
     "Aoarashi", "Isuzu", "Chigi", "Yugen", "Wako", "Kinrin", "Kiwami Choan"
 ]
+NAMES_ZH = {
+    "Aoarashi": "青嵐", "Isuzu": "五十鈴", "Chigi": "千木の白",
+    "Yugen": "又玄", "Wako": "和光", "Kinrin": "金輪", "Kiwami Choan": "極長安",
+}
 URL = "https://www.marukyu-koyamaen.co.jp/english/shop/products/catalog/matcha/principal"
 STATE_FILE = "matcha_state.json"
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
@@ -55,14 +59,46 @@ def save_state(state):
     with open(STATE_FILE, "w") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
+def format_status(current):
+    in_stock = [NAMES_ZH.get(n, n) for n, s in current.items() if s == "in_stock"]
+    sold_out = [NAMES_ZH.get(n, n) for n, s in current.items() if s == "sold_out"]
+    lines = []
+    if in_stock:
+        lines.append("✅ 有貨：" + "、".join(in_stock))
+    if sold_out:
+        lines.append("❌ 缺貨：" + "、".join(sold_out))
+    return "\n".join(lines)
+
 def main():
     html = fetch_page()
     current = parse(html)
     old = load_state()
-    restocked = [n for n in current if old.get(n) == "sold_out" and current[n] == "in_stock"]
-    if restocked:
-        names = "、".join(restocked)
-        send_telegram(f"🍵 <b>抹茶補貨了！</b>\n{names} 現在有貨，快去買！\n\n{URL}")
+
+    any_in_stock = any(s == "in_stock" for s in current.values())
+    was_any_in_stock = any(s == "in_stock" for s in old.values())
+
+    now = datetime.now(timezone(timedelta(hours=8))).strftime("%m/%d %H:%M")
+
+    if any_in_stock:
+        # 有貨就每 15 分鐘傳一次
+        restocked = [n for n in current if old.get(n) == "sold_out" and current[n] == "in_stock"]
+        if restocked:
+            header = "🍵 <b>補貨了！快去買！</b>"
+        else:
+            header = "🛒 <b>還有貨，記得去買！</b>"
+
+        msg = (
+            f"{header}\n\n"
+            f"{format_status(current)}\n\n"
+            f"🔗 {URL}\n"
+            f"⏰ {now}"
+        )
+        send_telegram(msg)
+
+    elif was_any_in_stock and not any_in_stock:
+        # 剛剛全部賣完
+        send_telegram(f"😢 <b>全部賣完了</b>，繼續幫你盯著...\n⏰ {now}")
+
     save_state(current)
     print(datetime.now(), current)
 
