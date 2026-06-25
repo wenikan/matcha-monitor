@@ -2,7 +2,7 @@ name: 抹茶庫存監控
 
 on:
   schedule:
-       - cron: '*/15 * * * *'  # 每15分鐘跑一次
+      - cron: '*/5 * * * *'  # 每5分鐘跑一次
   workflow_dispatch:       # 允許手動觸發測試
 
 jobs:
