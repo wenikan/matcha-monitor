@@ -1,4 +1,5 @@
 import os
+import json
 import time
 import requests as req
 from datetime import datetime, timezone, timedelta
@@ -13,6 +14,9 @@ URL = "https://www.marukyu-koyamaen.co.jp/english/shop/products/catalog/matcha/p
 TELEGRAM_TOKEN = os.environ["TELEGRAM_TOKEN"]
 TELEGRAM_CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 CHECK_INTERVAL = 30
+STATE_FILE = "matcha_state.json"
+TZ = timezone(timedelta(hours=8))
+REMIND_MINUTES = 10
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -92,20 +96,63 @@ def format_status(current):
     return "\n".join(lines)
 
 def check(old_state, method):
-    current = fetch_and_parse(method)
-    any_in_stock = any(s == "in_stock" for s in current.values())
-    was_any_in_stock = any(s == "in_stock" for s in old_state.values())
-    now = datetime.now(timezone(timedelta(hours=8))).strftime("%m/%d %H:%M")
+    current_products = fetch_and_parse(method)
+    now = datetime.now(TZ)
+    now_str = now.strftime("%m/%d %H:%M")
 
-    if any_in_stock:
-        restocked = [n for n in current if old_state.get(n) == "sold_out" and current[n] == "in_stock"]
-        header = "🍵 <b>補貨了！快去買！</b>" if restocked else "🛒 <b>還有貨，記得去買！</b>"
-        send_telegram(f"{header}\n\n{format_status(current)}\n\n🔗 {URL}\n⏰ {now}")
-    elif was_any_in_stock and not any_in_stock:
-        send_telegram(f"😢 <b>全部賣完了</b>，繼續幫你盯著...\n⏰ {now}")
+    old_products = old_state.get("products", {})
+    restock_at = dict(old_state.get("restock_at", {}))
 
-    print(f"[{now}] [{method}] {current}")
-    return current
+    newly_in_stock = []
+    remind_list = []
+    newly_sold_out = []
+
+    for name, status in current_products.items():
+        old_status = old_products.get(name)
+        if old_status == "sold_out" and status == "in_stock":
+            newly_in_stock.append(name)
+            restock_at[name] = now.isoformat()
+        elif status == "in_stock" and name in restock_at:
+            elapsed = (now - datetime.fromisoformat(restock_at[name])).total_seconds()
+            if elapsed <= REMIND_MINUTES * 60:
+                remind_list.append((name, int(elapsed / 60)))
+            else:
+                del restock_at[name]
+        elif status == "sold_out":
+            if name in restock_at:
+                del restock_at[name]
+            if old_status == "in_stock":
+                newly_sold_out.append(name)
+
+    status_text = format_status(current_products)
+
+    if newly_in_stock:
+        names = "、".join(NAMES_ZH.get(n, n) for n in newly_in_stock)
+        send_telegram(f"🍵 <b>補貨了！快去買！</b>\n\n✅ 新補貨：{names}\n\n{status_text}\n\n🔗 {URL}\n⏰ {now_str}")
+
+    if remind_list:
+        lines = "\n".join(f"✅ {NAMES_ZH.get(n, n)}（補貨 {m} 分鐘）" for n, m in remind_list)
+        send_telegram(f"⏰ <b>還有貨！</b>\n\n{lines}\n\n{status_text}\n\n🔗 {URL}\n⏰ {now_str}")
+
+    if newly_sold_out:
+        names = "、".join(NAMES_ZH.get(n, n) for n in newly_sold_out)
+        send_telegram(f"😢 <b>{names} 賣完了</b>\n\n{status_text}\n⏰ {now_str}")
+
+    print(f"[{now_str}] [{method}] {current_products}")
+    return {"products": current_products, "restock_at": restock_at}
+
+def load_state():
+    if not os.path.exists(STATE_FILE):
+        return {"products": {}, "restock_at": {}}
+    with open(STATE_FILE) as f:
+        saved = json.load(f)
+    if "products" not in saved:
+        return {"products": saved, "restock_at": {}}
+    return saved
+
+def save_state(state):
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
     method = detect_method()
@@ -113,7 +160,7 @@ if __name__ == "__main__":
 
     if loop_mode:
         print(f"🍵 監控啟動，每 {CHECK_INTERVAL} 秒檢查一次...")
-        state = {}
+        state = {"products": {}, "restock_at": {}}
         while True:
             try:
                 state = check(state, method)
@@ -121,4 +168,6 @@ if __name__ == "__main__":
                 print(f"[錯誤] {e}")
             time.sleep(CHECK_INTERVAL)
     else:
-        check({}, method)
+        state = load_state()
+        new_state = check(state, method)
+        save_state(new_state)
