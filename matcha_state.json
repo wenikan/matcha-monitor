@@ -1,13 +1,13 @@
 {
   "products": {
-    "Kiwami Choan": "in_stock",
-    "Tenju": "in_stock",
-    "Yugen": "in_stock",
+    "Kiwami Choan": "sold_out",
     "Unkaku": "sold_out",
     "Wako": "sold_out",
+    "Tenju": "sold_out",
     "Choan": "sold_out",
     "Eiju": "sold_out",
     "Kinrin": "sold_out",
+    "Yugen": "sold_out",
     "Chigi no Shiro": "sold_out",
     "Isuzu": "sold_out",
     "Aoarashi": "sold_out"
