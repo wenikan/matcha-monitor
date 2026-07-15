@@ -12,8 +12,5 @@
     "Isuzu": "sold_out",
     "Aoarashi": "sold_out"
   },
-  "restock_at": {
-    "Tenju": "2026-07-15T11:51:22.778972+08:00",
-    "Choan": "2026-07-15T11:51:22.778972+08:00"
-  }
+  "restock_at": {}
 }
