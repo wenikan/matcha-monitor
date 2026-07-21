@@ -12,7 +12,5 @@
     "Isuzu": "sold_out",
     "Aoarashi": "sold_out"
   },
-  "restock_at": {
-    "Eiju": "2026-07-21T14:17:17.742796+08:00"
-  }
+  "restock_at": {}
 }
