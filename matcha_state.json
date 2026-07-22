@@ -12,7 +12,5 @@
     "Isuzu": "sold_out",
     "Aoarashi": "sold_out"
   },
-  "restock_at": {
-    "Tenju": "2026-07-22T12:22:25.482501+08:00"
-  }
+  "restock_at": {}
 }
