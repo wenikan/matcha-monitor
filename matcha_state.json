@@ -1,9 +1,9 @@
 {
   "products": {
-    "Kiwami Choan": "sold_out",
+    "Kiwami Choan": "in_stock",
+    "Tenju": "in_stock",
     "Unkaku": "sold_out",
     "Wako": "sold_out",
-    "Tenju": "sold_out",
     "Choan": "sold_out",
     "Eiju": "sold_out",
     "Kinrin": "sold_out",
@@ -12,5 +12,8 @@
     "Isuzu": "sold_out",
     "Aoarashi": "sold_out"
   },
-  "restock_at": {}
+  "restock_at": {
+    "Kiwami Choan": "2026-07-24T17:10:12.867916+08:00",
+    "Tenju": "2026-07-24T17:10:12.867916+08:00"
+  }
 }
