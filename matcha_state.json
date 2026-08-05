@@ -1,20 +1,16 @@
 {
   "products": {
     "Tenju": "in_stock",
-    "Kinrin": "in_stock",
-    "Aoarashi": "in_stock",
     "Kiwami Choan": "sold_out",
     "Unkaku": "sold_out",
     "Wako": "sold_out",
     "Choan": "sold_out",
     "Eiju": "sold_out",
+    "Kinrin": "sold_out",
     "Yugen": "sold_out",
     "Chigi no Shiro": "sold_out",
-    "Isuzu": "sold_out"
+    "Isuzu": "sold_out",
+    "Aoarashi": "sold_out"
   },
-  "restock_at": {
-    "Tenju": "2026-08-05T17:48:49.555821+08:00",
-    "Kinrin": "2026-08-05T17:48:49.555821+08:00",
-    "Aoarashi": "2026-08-05T17:48:49.555821+08:00"
-  }
+  "restock_at": {}
 }
