@@ -4,20 +4,13 @@
     "Choan": "in_stock",
     "Eiju": "in_stock",
     "Kinrin": "in_stock",
-    "Isuzu": "in_stock",
-    "Aoarashi": "in_stock",
     "Kiwami Choan": "sold_out",
     "Wako": "sold_out",
     "Tenju": "sold_out",
     "Yugen": "sold_out",
-    "Chigi no Shiro": "sold_out"
+    "Chigi no Shiro": "sold_out",
+    "Isuzu": "sold_out",
+    "Aoarashi": "sold_out"
   },
-  "restock_at": {
-    "Unkaku": "2026-09-15T18:10:34.722311+08:00",
-    "Choan": "2026-09-15T18:10:34.722311+08:00",
-    "Eiju": "2026-09-15T18:10:34.722311+08:00",
-    "Kinrin": "2026-09-15T18:10:34.722311+08:00",
-    "Isuzu": "2026-09-15T18:10:34.722311+08:00",
-    "Aoarashi": "2026-09-15T18:10:34.722311+08:00"
-  }
+  "restock_at": {}
 }
